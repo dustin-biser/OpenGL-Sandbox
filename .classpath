@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="externals/lwjgl/jar/lwjgl_util.jar" sourcepath="externals/lwjgl/lwjgl-source-2.8.5.zip">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="OpenGL-SandBox/externals/lwjgl/native/linux"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="externals/lwjgl/jar/lwjgl.jar" sourcepath="externals/lwjgl/lwjgl-source-2.8.5.zip">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="OpenGL-Sandbox/externals/lwjgl/native/linux"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="externals/PNGDecoder/PNGDecoder.jar"/>
+	<classpathentry kind="lib" path="externals/slick2D/slick.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
