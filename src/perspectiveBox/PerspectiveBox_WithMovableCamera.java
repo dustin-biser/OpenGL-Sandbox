@@ -8,6 +8,7 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.Display;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -33,10 +34,13 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	
 	// OpenGL related identifiers.
 	private int programId;
-	private int vao;
+	private int vaoBlock;
+	private int vaoGround;
 	private int vboPositions;
 	private int vboColors;
 	private int vboIndices;
+	private int vboGroundPositions;
+	private int vboGroundColors;
 	private int positionAttrib_Location;
 	private int colorAttrib_Location;
 	private int modelToWorldMatrix_Location;
@@ -44,18 +48,19 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	private int cameraToClipMatrix_Location;
 	
 	// Matrix related data.
-	private Matrix4f modelToWorldMatrix;
+	private Matrix4f box_modelToWorldMatrix;
 	private Matrix4f worldToCameraMatrix;
 	private Matrix4f cameraToClipMatrix;
+	private Matrix4f ground_modelToWorldMatrix;
 	private FloatBuffer matrix4fBuffer;
 	
 	private byte[] indices;
 	
-	// Eye coordinate frustum dimensions
-	private float frustumWidth = 2f;
-	private float frustumHeight = 2f;
-	private float frustumNearDistance = 0.5f;
-	private float frustumFarDistance = 1.2f;
+	// Frustum dimensions
+	private float frustumFov = 30f;
+	private float frustumAspectRatio = 1f;
+	private float frustumNearDistance = 1f;
+	private float frustumFarDistance = 100f;
 	
 	@Override
 	protected void initialize(){
@@ -79,8 +84,17 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 		
 		glUseProgram(programId);
 		
-		glBindVertexArray(vao);
+		//-- Render Block.
+		glBindVertexArray(vaoBlock);
 		glDrawElements(GL_TRIANGLES, indices.length, GL_UNSIGNED_BYTE, 0);
+		
+		//-- Render Ground.
+		// Load the specific ground modelToWorld matrix uniform.
+		ground_modelToWorldMatrix.store(matrix4fBuffer);
+		matrix4fBuffer.flip();
+		glUniformMatrix4(modelToWorldMatrix_Location, false, matrix4fBuffer);
+		glBindVertexArray(vaoGround);
+		glDrawRangeElements(GL_TRIANGLES, 0, 3, 6, GL_UNSIGNED_BYTE, 0);
 		
 		glBindVertexArray(0);
 		glUseProgram(0);
@@ -91,8 +105,8 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	@Override
 	protected void resize(int width, int height) {
 		float aspectRatio = (((float) width) / height);
-		float frustumXScale = 2 * frustumNearDistance / frustumWidth;
-		float frustumYScale = 2 * frustumNearDistance / frustumHeight;
+		float frustumYScale = GLUtils.coTangent(GLUtils.degreesToRadians(frustumFov / 2));
+		float frustumXScale = frustumYScale * frustumAspectRatio;
 		
 		if (width > height) {
 			// Shrink the x scale in eye-coordinate space, so that when geometry is
@@ -122,7 +136,7 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 		glDeleteBuffers(vboIndices);
 		
 		glBindVertexArray(0);
-		glDeleteVertexArrays(vao);
+		glDeleteVertexArrays(vaoBlock);
 		
 		glDeleteProgram(programId);
 		
@@ -186,12 +200,14 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	}
 	
 	private void setupMatrices(){
-		modelToWorldMatrix = new Matrix4f();
+		box_modelToWorldMatrix = new Matrix4f();
 		
 		worldToCameraMatrix = new Matrix4f();
 		
-		cameraToClipMatrix = GLUtils.createProjectionMatrix(frustumWidth, frustumHeight,
-				frustumNearDistance, frustumFarDistance);
+		cameraToClipMatrix = GLUtils.createProjectionMatrixFov(frustumFov,
+				frustumAspectRatio, frustumNearDistance, frustumFarDistance);
+		
+		ground_modelToWorldMatrix = new Matrix4f();
 		
 		// Used as a vehicle for sending matrix data OpenGL.
 		matrix4fBuffer = BufferUtils.createFloatBuffer(16);
@@ -301,8 +317,9 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 				22, 23, 20
 		};
 		
+		
 		// Move box into scene.
-		modelToWorldMatrix.translate(new Vector3f(2f, 2f, -2f));
+		box_modelToWorldMatrix.translate(new Vector3f(-7f, -9f, -45f));
 		
 		//-- Put position data into a FloatBuffer.
 		FloatBuffer vertexPositionBuffer = BufferUtils
@@ -333,24 +350,83 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 		glBufferData(GL_ARRAY_BUFFER, vertexColorBuffer, GL_STATIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		
-		//-- Map VBO to  index data within OpenGL.
+		//-- Map VBO to index data within OpenGL.
 		vboIndices = glGenBuffers();
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndices);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
 		
+		
+		
+		float groundVertexPositions[] = {
+				-10, 0,  0,
+				 10, 0,  0,
+				 10, 0, -10,
+				-10, 0, -10
+		};
+		
+		float groundVertexColors[] = {
+				0.1f, 0.4f, 0.1f, 1.0f,
+				0.1f, 0.4f, 0.1f, 1.0f,
+				0.1f, 0.4f, 0.1f, 1.0f,
+				0.1f, 0.4f, 0.1f, 1.0f
+		};
+		
+		// Kick ground into view.
+		ground_modelToWorldMatrix.translate(new Vector3f(0, -10f, -40f));
+		
+		//-- Put ground position data into a FloatBuffer.
+		FloatBuffer groundVertexPositionBuffer = BufferUtils
+				.createFloatBuffer(groundVertexPositions.length);
+		groundVertexPositionBuffer.put(groundVertexPositions);
+		groundVertexPositionBuffer.flip();
+		
+		//-- Put ground color data into a FloatBuffer.
+		FloatBuffer groundColorBuffer = BufferUtils
+				.createFloatBuffer(groundVertexColors.length);
+		groundColorBuffer.put(groundVertexColors);
+		groundColorBuffer.flip();
+		
+		//-- Map VBO to ground vertex positions
+		vboGroundPositions = glGenBuffers();
+		glBindBuffer(GL_ARRAY_BUFFER, vboGroundPositions);
+		glBufferData(GL_ARRAY_BUFFER, groundVertexPositionBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+		
+		//-- Map VBO to ground vertex colors
+		vboGroundColors = glGenBuffers();
+		glBindBuffer(GL_ARRAY_BUFFER, vboGroundColors);
+		glBufferData(GL_ARRAY_BUFFER, groundColorBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+		
 	}
 	
 	private void setupVertexArrayObject(){
-		vao = glGenVertexArrays();
-		glBindVertexArray(vao);
-		glEnableVertexAttribArray(0);  // Enable Position vertex attributes.
-		glEnableVertexAttribArray(1);  // Enable Colors vertex attributes.
+		//-- Setup VAO for the Block
+		vaoBlock = glGenVertexArrays();
+		glBindVertexArray(vaoBlock);
+		glEnableVertexAttribArray(positionAttrib_Location);
+		glEnableVertexAttribArray(colorAttrib_Location);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vboPositions);
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+		glVertexAttribPointer(positionAttrib_Location, 3, GL_FLOAT, false, 0, 0);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, vboColors);
-		glVertexAttribPointer(1, 4, GL_FLOAT, false, 0, 0);
+		glVertexAttribPointer(colorAttrib_Location, 4, GL_FLOAT, false, 0, 0);
+		
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndices);
+		
+		
+		//-- Setup VAO for the Ground
+		vaoGround = glGenVertexArrays();
+		glBindVertexArray(vaoGround);
+		glEnableVertexAttribArray(positionAttrib_Location);
+		glEnableVertexAttribArray(colorAttrib_Location);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vboGroundPositions);
+		glVertexAttribPointer(positionAttrib_Location, 3, GL_FLOAT, false, 0, 0);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vboGroundColors);
+		glVertexAttribPointer(colorAttrib_Location, 4, GL_FLOAT, false, 0, 0);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndices);
 		
@@ -365,7 +441,7 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 		glUseProgram(programId);
 		
 		// Upload modelToWorldMatrix uniform.
-		modelToWorldMatrix.store(matrix4fBuffer);
+		box_modelToWorldMatrix.store(matrix4fBuffer);
 		matrix4fBuffer.flip();
 		glUniformMatrix4(modelToWorldMatrix_Location, false, matrix4fBuffer);
 		
@@ -390,31 +466,37 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 		final float z_delta = 0.2f; 
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
-			modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
+			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
-			modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
+			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
 		}
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-			modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
+			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-			modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
+			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
 		}
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
-			modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
+			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_M)) {
-			modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
+			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
 		}
 		
-		while(Keyboard.next()) {
-			if(Keyboard.getEventKeyState()) {
-				if(Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
+		while (Keyboard.next()) {
+			if (Keyboard.getEventKeyState()) {
+				if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
 					// Set flag to break out of main loop.
 					this.continueMainLoop = false;
+				}
+				else if (Keyboard.getEventKey() == Keyboard.KEY_1) {
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+				else if (Keyboard.getEventKey() == Keyboard.KEY_2) {
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 			}
 		}
