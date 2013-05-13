@@ -11,6 +11,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL32.*;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
@@ -19,30 +20,36 @@ import utilities.GLUtils;
 import utilities.LwjglWindow;
 import utilities.ShaderUtils;
 
-public class PerspectiveBox extends LwjglWindow {
+public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	
 	public static void main(String[] args) {
-		new PerspectiveBox_WithMovableCamera().start();
+		PerspectiveBox_WithMovableCamera p = new PerspectiveBox_WithMovableCamera();
+		p.setWindowTitle("Perspective Box with Movable Camera");
+		p.start();
 	}
 	
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 	
-	// GL identifiers.
+	// OpenGL related identifiers.
 	private int programId;
 	private int vao;
 	private int vboPositions;
 	private int vboColors;
 	private int vboIndices;
-	
-	private byte[] indices;
+	private int positionAttrib_Location;
+	private int colorAttrib_Location;
+	private int modelToWorldMatrix_Location;
+	private int worldToCameraMatrix_Location;
+	private int cameraToClipMatrix_Location;
 	
 	// Matrix related data.
-	private Matrix4f projectionMatrix;
+	private Matrix4f modelToWorldMatrix;
+	private Matrix4f worldToCameraMatrix;
+	private Matrix4f cameraToClipMatrix;
 	private FloatBuffer matrix4fBuffer;
-	private int projectionMatrixLocation;
-	private int offsetLocation;
-	private Vector3f modelOffset;
+	
+	private byte[] indices;
 	
 	// Eye coordinate frustum dimensions
 	private float frustumWidth = 2f;
@@ -68,6 +75,8 @@ public class PerspectiveBox extends LwjglWindow {
 	@Override
 	protected void renderCycle(){
 		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		
 		glUseProgram(programId);
 		
 		glBindVertexArray(vao);
@@ -88,14 +97,14 @@ public class PerspectiveBox extends LwjglWindow {
 		if (width > height) {
 			// Shrink the x scale in eye-coordinate space, so that when geometry is
 			// projected to ndc-space, it is widened out to become square.
-	    	projectionMatrix.m00 = frustumXScale / aspectRatio;
-	    	projectionMatrix.m11 = frustumYScale;
+	    	cameraToClipMatrix.m00 = frustumXScale / aspectRatio;
+	    	cameraToClipMatrix.m11 = frustumYScale;
 		}
 		else {
 			// Shrink the y scale in eye-coordinate space, so that when geometry is
 			// projected to ndc-space, it is widened out to become square.
-	    	projectionMatrix.m00 = frustumXScale;
-	    	projectionMatrix.m11 = frustumYScale * aspectRatio;
+	    	cameraToClipMatrix.m00 = frustumXScale;
+	    	cameraToClipMatrix.m11 = frustumYScale * aspectRatio;
 		}
     	
     	// Use entire window for rendering.
@@ -129,15 +138,21 @@ public class PerspectiveBox extends LwjglWindow {
 	    glCullFace(GL_BACK);
 	    glFrontFace(GL_CCW);
 	    
-		// Setup an XNA like background color
-		glClearColor(0.4f, 0.6f, 0.9f, 0f);
+	    // Setup depth testing
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(true);
+		glDepthFunc(GL_LEQUAL);
+		glDepthRange(0.0f, 1.0f);
+		glEnable(GL_DEPTH_CLAMP);
+	    
+		glClearColor(0.3f, 0.5f, 0.7f, 0f);
 	}
 	
 	private void setupShaders(){
-		String vertexShaderFile = "src/perspectiveBox/shaders/MatrixPerspective.vert";
+		String vertexShaderFile = "src/perspectiveBox/shaders/PosColorWorldTransform.vert";
 		int vertexShaderId = ShaderUtils.loadShader(vertexShaderFile, GL_VERTEX_SHADER);
 		
-		String fragmentShaderFile = "src/perspectiveBox/shaders/Standard.frag"; 
+		String fragmentShaderFile = "src/perspectiveBox/shaders/ColorPassthrough.frag"; 
 		int fragmentShaderId = ShaderUtils.loadShader(fragmentShaderFile, GL_FRAGMENT_SHADER);
 		
 		
@@ -154,9 +169,14 @@ public class PerspectiveBox extends LwjglWindow {
 		
 		glUseProgram(programId);
 		
-		// Get location shader uniforms.
-		projectionMatrixLocation = glGetUniformLocation(programId, "projectionMatrix");
-		offsetLocation = glGetUniformLocation(programId, "offset");
+		// Get location of shader uniforms.
+		cameraToClipMatrix_Location = glGetUniformLocation(programId, "cameraToClipMatrix");
+		worldToCameraMatrix_Location = glGetUniformLocation(programId, "worldToCameraMatrix");
+		modelToWorldMatrix_Location = glGetUniformLocation(programId, "modelToWorldMatrix");
+		
+		// Get location of vertex attributes
+		positionAttrib_Location = glGetAttribLocation(programId, "position");
+		colorAttrib_Location = glGetAttribLocation(programId, "color");
 		
 		glValidateProgram(programId);
 		
@@ -166,11 +186,14 @@ public class PerspectiveBox extends LwjglWindow {
 	}
 	
 	private void setupMatrices(){
-		// Setup "eye coordinate frustum" to "normalized device coordinate cube"
-		// perspective projection matrix.
-		projectionMatrix = GLUtils.createProjectionMatrix(frustumWidth, frustumHeight,
+		modelToWorldMatrix = new Matrix4f();
+		
+		worldToCameraMatrix = new Matrix4f();
+		
+		cameraToClipMatrix = GLUtils.createProjectionMatrix(frustumWidth, frustumHeight,
 				frustumNearDistance, frustumFarDistance);
 		
+		// Used as a vehicle for sending matrix data OpenGL.
 		matrix4fBuffer = BufferUtils.createFloatBuffer(16);
 	}
 	
@@ -279,7 +302,7 @@ public class PerspectiveBox extends LwjglWindow {
 		};
 		
 		// Move box into scene.
-		modelOffset = new Vector3f(2f, 2f, -2f);
+		modelToWorldMatrix.translate(new Vector3f(2f, 2f, -2f));
 		
 		//-- Put position data into a FloatBuffer.
 		FloatBuffer vertexPositionBuffer = BufferUtils
@@ -335,55 +358,69 @@ public class PerspectiveBox extends LwjglWindow {
 		glBindVertexArray(0);
 	}
 	
+	/*
+	 * Send matrix data to vertex uniforms.
+	 */
 	private void updateMatrixUniforms(){
-		//-- Update OpenGL Matrices
-		// Upload uniform shader data.
 		glUseProgram(programId);
 		
-		projectionMatrix.store(matrix4fBuffer);
+		// Upload modelToWorldMatrix uniform.
+		modelToWorldMatrix.store(matrix4fBuffer);
 		matrix4fBuffer.flip();
-		glUniformMatrix4(projectionMatrixLocation, false, matrix4fBuffer);
+		glUniformMatrix4(modelToWorldMatrix_Location, false, matrix4fBuffer);
+		
+		// Upload worldToCameraMatrix uniform.
+		worldToCameraMatrix.store(matrix4fBuffer);
+		matrix4fBuffer.flip();
+		glUniformMatrix4(worldToCameraMatrix_Location, false, matrix4fBuffer);
+		
+		// Upload cameraToClipMatrix uniform.
+		cameraToClipMatrix.store(matrix4fBuffer);
+		matrix4fBuffer.flip();
+		glUniformMatrix4(cameraToClipMatrix_Location, false, matrix4fBuffer);
 		
 		glUseProgram(0);
 		
 		GLUtils.exitOnGLError("logicCycle");
 	}
 	
-	private void processUserInput(){
+	private void processUserInput() {
 		final float x_delta = 0.2f; 
 		final float y_delta = 0.2f; 
 		final float z_delta = 0.2f; 
-				
-		while(Keyboard.next()){
-			if(Keyboard.getEventKeyState()){
-				if(Keyboard.getEventKey() == Keyboard.KEY_ESCAPE){
+		
+		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+			modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+			modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
+		}
+		
+		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
+			modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
+			modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
+		}
+		
+		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+			modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_M)) {
+			modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
+		}
+		
+		while(Keyboard.next()) {
+			if(Keyboard.getEventKeyState()) {
+				if(Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
 					// Set flag to break out of main loop.
-					continueMainLoop = false;
-				}
-				if (Keyboard.getEventKey() == Keyboard.KEY_LEFT){
-					modelOffset.translate(-1*x_delta, 0, 0);
-				}
-				else if (Keyboard.getEventKey() == Keyboard.KEY_RIGHT){
-					modelOffset.translate(x_delta, 0, 0);
-				}
-				else if (Keyboard.getEventKey() == Keyboard.KEY_UP){
-					modelOffset.translate(0, y_delta, 0);
-				}
-				else if (Keyboard.getEventKey() == Keyboard.KEY_DOWN){
-					modelOffset.translate(0, -1*y_delta, 0);
-				}
-				else if (Keyboard.getEventKey() == Keyboard.KEY_P){
-					modelOffset.translate(0, 0, z_delta);
-				}
-				else if (Keyboard.getEventKey() == Keyboard.KEY_M){
-					modelOffset.translate(0, 0, -1*z_delta);
+					this.continueMainLoop = false;
 				}
 			}
 		}
 		
 		// Upload shader uniform data.
 		glUseProgram(programId);
-		glUniform3f(offsetLocation, modelOffset.x, modelOffset.y, modelOffset.z);
 		
 		glUseProgram(0);
 		
