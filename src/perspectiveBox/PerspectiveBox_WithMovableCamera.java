@@ -79,8 +79,7 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	
 	@Override
 	protected void renderCycle(){
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 		
 		glUseProgram(programId);
 		
@@ -461,10 +460,16 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	}
 	
 	private void processUserInput() {
-		final float x_delta = 0.2f; 
-		final float y_delta = 0.2f; 
-		final float z_delta = 0.2f; 
+		final float x_delta = 0.1f; 
+		final float y_delta = 0.1f; 
+		final float z_delta = 0.1f; 
 		
+		final float angle_delta = (float) (1f * (Math.PI) / 180f);
+		
+		///////////////////////////////////////////////////////////
+		// Box Movement Keys
+		///////////////////////////////////////////////////////////
+		// Horizontal Box Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
 			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
 		}
@@ -472,6 +477,7 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
 		}
 		
+		// Vertical Box Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
 			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
 		}
@@ -479,6 +485,7 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
 		}
 		
+		// Near/Far Box Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
 			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
 		}
@@ -486,17 +493,62 @@ public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
 		}
 		
+		///////////////////////////////////////////////////////////
+		// Camera Movement Keys
+		///////////////////////////////////////////////////////////
+		// Horizontal Camera Movement.
+		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
+			worldToCameraMatrix.translate(new Vector3f(x_delta, 0f, 0f));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_D)){
+			worldToCameraMatrix.translate(new Vector3f(-1*x_delta, 0f, 0f));
+		}
+		
+		// Vertical Camera Movement.
+		if (Keyboard.isKeyDown(Keyboard.KEY_R)) {
+			worldToCameraMatrix.translate(new Vector3f(0f, -1 * y_delta, 0f));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_F)) {
+			worldToCameraMatrix.translate(new Vector3f(0f, y_delta, 0f));
+		}
+		
+		// Near/Far Camera Movement.
+		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+			worldToCameraMatrix.translate(new Vector3f(0f, 0f, z_delta));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+			worldToCameraMatrix.translate(new Vector3f(0f, 0f, -1 * z_delta));
+		}
+		
+		// Camera rotation about y-axis.
+		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
+			worldToCameraMatrix.rotate(-1 * angle_delta, new Vector3f(0f, 1f, 0f));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+			worldToCameraMatrix.rotate(angle_delta, new Vector3f(0f, 1f, 0f));
+		}
+		
+		
 		while (Keyboard.next()) {
 			if (Keyboard.getEventKeyState()) {
 				if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
-					// Set flag to break out of main loop.
-					this.continueMainLoop = false;
+					leaveMainLoop();
 				}
 				else if (Keyboard.getEventKey() == Keyboard.KEY_1) {
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					System.out.println("glPolygonMode = GL_FILL");
 				}
 				else if (Keyboard.getEventKey() == Keyboard.KEY_2) {
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					System.out.println("glPolygonMode = GL_LINE");
+				}
+				else if (Keyboard.getEventKey() == Keyboard.KEY_3) {
+					glEnable(GL_CULL_FACE);
+					System.out.println("GL_CULL_FACE Enabled");
+				}
+				else if (Keyboard.getEventKey() == Keyboard.KEY_4) {
+					glDisable(GL_CULL_FACE);
+					System.out.println("GL_CULL_FACE Disabled");
 				}
 			}
 		}

@@ -22,7 +22,7 @@ import utilities.ShaderUtils;
 public class PerspectiveBox extends LwjglWindow {
 	
 	public static void main(String[] args) {
-		new PerspectiveBox_WithMovableCamera().start();
+		new PerspectiveBox().start();
 	}
 	
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
