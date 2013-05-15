@@ -108,6 +108,10 @@ public class LwjglWindow {
 		Display.destroy();
 	}
 	
+	protected final void leaveMainLoop() {
+		continueMainLoop = false;
+	}
+	
 	public static void main(String[] args){
 		LwjglWindow window = new LwjglWindow();
 		
