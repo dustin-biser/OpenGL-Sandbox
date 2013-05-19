@@ -30,9 +30,6 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		p.start();
 	}
 	
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	
 	// OpenGL related identifiers.
 	private int programId;
 	private int vaoBlock;
@@ -65,6 +62,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	private float frustumNearDistance = 1f;
 	private float frustumFarDistance = 100f;
 	
+	//--------------------------------------------------------------------------
 	@Override
 	protected void initialize(){
 		this.setupGL();
@@ -75,12 +73,14 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		this.setupCamera();
 	}
 	
+	//--------------------------------------------------------------------------
 	@Override
 	protected void logicCycle(){
 		this.processUserInput();
 		this.updateMatrixUniforms();
 	}
 	
+	//--------------------------------------------------------------------------
 	@Override
 	protected void renderCycle(){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
@@ -105,6 +105,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		GLUtils.exitOnGLError("renderCycle");
 	} 
 	
+	//--------------------------------------------------------------------------
 	@Override
 	protected void resize(int width, int height) {
 		float aspectRatio = (((float) width) / height);
@@ -128,6 +129,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
     	glViewport(0, 0, width, height);
 	}
 	
+	//--------------------------------------------------------------------------
 	@Override
 	protected void cleanup(){
 		glDisableVertexAttribArray(0);
@@ -146,9 +148,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		Display.destroy();
 	}
 	
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-	
+	//--------------------------------------------------------------------------
 	private void setupGL(){
 		// Render only the front face of geometry.
 		glEnable(GL_CULL_FACE);
@@ -165,6 +165,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		glClearColor(0.3f, 0.5f, 0.7f, 0f);
 	}
 	
+	//--------------------------------------------------------------------------
 	private void setupShaders(){
 		String vertexShaderFile = "src/perspectiveBox/shaders/PosColorWorldTransform.vert";
 		int vertexShaderId = ShaderUtils.loadShader(vertexShaderFile, GL_VERTEX_SHADER);
@@ -202,6 +203,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		glUseProgram(0);
 	}
 	
+	//--------------------------------------------------------------------------
 	private void setupMatrices(){
 		box_modelToWorldMatrix = new Matrix4f();
 		
@@ -216,19 +218,21 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		matrix4fBuffer = BufferUtils.createFloatBuffer(16);
 	}
 	
+	//--------------------------------------------------------------------------
 	private void setupCamera(){
 		camera = new Camera();
 		
-		// Position camera to the right of box, and face it towards box, as seen
-		// from Eye-Space.
-		// Box at (-7f, -9f, -45f);
-		camera.lookAt(0f, 0f, -40f,
-					  -7f, -9f, -45f,
-					  -0.3f, 0.3f, -0.3f);
+		// Position camera near Box, which is at (-7f, -9f, -45f);
+		camera.setPosition(0f, -9f, -40f);
+		camera.lookAt(-7f, -9f, -45f);
+//		camera.lookAt(0f, 0f, 0f,
+//					  -7f, -9f, -45f,
+//					  0.0f, 0.1f, 0.0f);
 		
 		worldToCameraMatrix = camera.getViewMatrix();
 	}
 	
+	//--------------------------------------------------------------------------
 	private void setupVertexBuffer(){
 		final float vertexPositions[] = {
 			// bottom face
@@ -374,10 +378,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		
 		
 		float groundVertexPositions[] = {
-				-10, 0,  0,
-				 10, 0,  0,
-				 10, 0, -10,
-				-10, 0, -10
+				-15, 0,  0,
+				 15, 0,  0,
+				 15, 0, -50,
+				-15, 0, -50
 		};
 		
 		float groundVertexColors[] = {
@@ -416,6 +420,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		
 	}
 	
+	//--------------------------------------------------------------------------
 	private void setupVertexArrayObject(){
 		//-- Setup VAO for the Block
 		vaoBlock = glGenVertexArrays();
@@ -450,6 +455,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		glBindVertexArray(0);
 	}
 	
+	//--------------------------------------------------------------------------
 	/*
 	 * Send matrix data to vertex uniforms.
 	 */
@@ -462,6 +468,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		glUniformMatrix4(modelToWorldMatrix_Location, false, matrix4fBuffer);
 		
 		// Upload worldToCameraMatrix uniform.
+		worldToCameraMatrix = camera.getViewMatrix();
 		worldToCameraMatrix.store(matrix4fBuffer);
 		matrix4fBuffer.flip();
 		glUniformMatrix4(worldToCameraMatrix_Location, false, matrix4fBuffer);
@@ -476,12 +483,12 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		GLUtils.exitOnGLError("logicCycle");
 	}
 	
+	private Vector3f v;
+	//--------------------------------------------------------------------------
 	private void processUserInput() {
-		final float x_delta = 0.1f; 
-		final float y_delta = 0.1f; 
-		final float z_delta = 0.1f; 
-		
-		final float angle_delta = (float) (1f * (Math.PI) / 180f);
+		final float x_delta = 0.2f; 
+		final float y_delta = 0.2f; 
+		final float z_delta = 0.2f; 
 		
 		///////////////////////////////////////////////////////////
 		// Box Movement Keys
@@ -515,36 +522,33 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		///////////////////////////////////////////////////////////
 		// Horizontal Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-			worldToCameraMatrix.translate(new Vector3f(x_delta, 0f, 0f));
+			camera.translateRelative(-1 * x_delta, 0f, 0f);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_D)){
-			worldToCameraMatrix.translate(new Vector3f(-1*x_delta, 0f, 0f));
+			camera.translateRelative(x_delta, 0f, 0f);
 		}
 		
 		// Vertical Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_R)) {
-			worldToCameraMatrix.translate(new Vector3f(0f, -1 * y_delta, 0f));
+			camera.translateRelative(0f, y_delta, 0f);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_F)) {
-			worldToCameraMatrix.translate(new Vector3f(0f, y_delta, 0f));
+			camera.translateRelative(0f, -1 * y_delta, 0f);
 		}
 		
 		// Near/Far Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
-			worldToCameraMatrix.translate(new Vector3f(0f, 0f, z_delta));
+			camera.translateRelative(0f, 0f, z_delta);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
-			worldToCameraMatrix.translate(new Vector3f(0f, 0f, -1 * z_delta));
+			camera.translateRelative(0f, 0f, -1 * z_delta);
 		}
 		
-		// Camera rotation about y-axis.
-		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
-			worldToCameraMatrix.rotate(-1 * angle_delta, new Vector3f(0f, 1f, 0f));
+		// TODO Remove
+		{
+			// Have camera look at box.
+			camera.lookAt(-7f, -9f, -45f);
 		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
-			worldToCameraMatrix.rotate(angle_delta, new Vector3f(0f, 1f, 0f));
-		}
-		
 		
 		while (Keyboard.next()) {
 			if (Keyboard.getEventKeyState()) {
@@ -566,6 +570,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 				else if (Keyboard.getEventKey() == Keyboard.KEY_4) {
 					glDisable(GL_CULL_FACE);
 					System.out.println("GL_CULL_FACE Disabled");
+				}
+				else if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
+					// Have camera look at box.
+					camera.lookAt(-7f, -9f, -45f);
 				}
 			}
 		}
