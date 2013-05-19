@@ -67,9 +67,33 @@ public class LwjglWindow {
 			if(Display.wasResized()) {
 				resize(Display.getWidth(), Display.getHeight());
 			}
+			
+			if (displayFPS) {
+				printFPS();
+			}
 		}
 		
 		this.cleanup();
+	}
+	
+	private boolean displayFPS = false;
+	
+	public void enableFpsDisplay() {
+		displayFPS = true;
+	}
+	
+	public void disableFpsDisplay() {
+		displayFPS = false;
+	}
+	
+	private byte counter = 0;
+	
+	private void printFPS(){
+		if (counter == 60) {
+			counter = 0;
+			System.out.println("FPS: " + 1000 / lastFrameDuration);
+		}
+		counter++;
 	}
 	
 	protected void initialize() {
