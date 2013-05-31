@@ -2,6 +2,10 @@ package utilities;
 
 public class MathUtils {
 	
+    /**
+     * Acceptable tolerance for comparisons between floats that are not
+     * much larger than 1f.
+     */
 	public static final float EPSILON = Math.ulp(1f);
 	
 	/**
@@ -12,7 +16,7 @@ public class MathUtils {
 	 * @return true if the distance between floats a and b is within 5 ULPs of
 	 *         their average, false otherwise.
 	 */
-	public static boolean floatEqualsUlps(float a, float b) {
+	public static boolean floatEqualsUlp(float a, float b) {
 		return  Math.abs(a - b) <= 5 * Math.ulp(0.5f * (a + b));
 	}
 	
@@ -26,7 +30,7 @@ public class MathUtils {
      * @return true if the distance between floats a and b is within
      *         <code>numUlps</code> ULPs of their average, false otherwise.
      */
-	public static boolean floatEqualsUlps(float a, float b, int numUlp) {
+	public static boolean floatEqualsUlp(float a, float b, int numUlp) {
 		return  Math.abs(a - b) <= numUlp * Math.ulp(0.5f * (a + b));
 	}
 	
