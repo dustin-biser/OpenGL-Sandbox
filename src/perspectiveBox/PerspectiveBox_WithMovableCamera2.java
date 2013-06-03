@@ -17,10 +17,10 @@ import static org.lwjgl.opengl.GL32.*;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
-import utilities.Camera;
-import utilities.GLUtils;
-import utilities.LwjglWindow;
-import utilities.ShaderUtils;
+import util.GLUtils;
+import util.LwjglWindow;
+import util.QuaternionCamera;
+import util.ShaderUtils;
 
 public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	
@@ -54,7 +54,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	
 	private byte[] indices;
 	
-	private Camera camera;
+	private QuaternionCamera camera;
 	
 	// Frustum dimensions
 	private float frustumFov = 30f;
@@ -73,6 +73,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		this.setupCamera();
 	}
 	
+	Vector3f cameraPos = new Vector3f();
 	//--------------------------------------------------------------------------
 	@Override
 	protected void logicCycle(){
@@ -220,14 +221,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	
 	//--------------------------------------------------------------------------
 	private void setupCamera(){
-		camera = new Camera();
+		camera = new QuaternionCamera();
 		
 		// Position camera near Box, which is at (-7f, -9f, -45f);
-		camera.setPosition(0f, -9f, -40f);
-		camera.lookAt(-7f, -9f, -45f);
-//		camera.lookAt(0f, 0f, 0f,
-//					  -7f, -9f, -45f,
-//					  0.0f, 0.1f, 0.0f);
+//		camera.setPosition(0f, -9f, -40f);
 		
 		worldToCameraMatrix = camera.getViewMatrix();
 	}
@@ -483,39 +480,44 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		GLUtils.exitOnGLError("logicCycle");
 	}
 	
-	private Vector3f v;
 	//--------------------------------------------------------------------------
 	private void processUserInput() {
+		// Translations
 		final float x_delta = 0.2f; 
 		final float y_delta = 0.2f; 
 		final float z_delta = 0.2f; 
+		
+		// Rotations
+		final float roll_delta = (0.01f)*(float)Math.PI;
+		final float yaw_delta = (0.005f)*(float)Math.PI;
+		final float pitch_delta = (0.005f)*(float)Math.PI;
 		
 		///////////////////////////////////////////////////////////
 		// Box Movement Keys
 		///////////////////////////////////////////////////////////
 		// Horizontal Box Movement.
-		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
-			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
-			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
-		}
-		
-		// Vertical Box Movement.
-		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
-		}
-		
-		// Near/Far Box Movement.
-		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
-			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
-		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_M)) {
-			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
-		}
+//		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
+//		}
+//		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
+//		}
+//		
+//		// Vertical Box Movement.
+//		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
+//		}
+//		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
+//		}
+//		
+//		// Near/Far Box Movement.
+//		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
+//		}
+//		else if (Keyboard.isKeyDown(Keyboard.KEY_M)) {
+//			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
+//		}
 		
 		///////////////////////////////////////////////////////////
 		// Camera Movement Keys
@@ -537,17 +539,35 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		}
 		
 		// Near/Far Camera Movement.
-		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
 			camera.translateRelative(0f, 0f, z_delta);
 		}
-		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
 			camera.translateRelative(0f, 0f, -1 * z_delta);
 		}
 		
-		// TODO Remove
-		{
-			// Have camera look at box.
-			camera.lookAt(-7f, -9f, -45f);
+		// Roll
+		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
+			camera.roll(roll_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+			camera.roll(-1f*roll_delta);
+		}
+		
+		// Yaw
+		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+			camera.yaw(yaw_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+			camera.yaw(-1f*yaw_delta);
+		}
+		
+		// Pitch
+		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+			camera.pitch(pitch_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+			camera.pitch(-1f*pitch_delta);
 		}
 		
 		while (Keyboard.next()) {

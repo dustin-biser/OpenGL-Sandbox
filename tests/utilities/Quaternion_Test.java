@@ -8,7 +8,9 @@ import org.junit.Test;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
-import static utilities.MathUtils.*;
+
+import util.math.Quaternion;
+import static util.math.MathUtils.*;
 
 public class Quaternion_Test {
 	private Quaternion q;
@@ -39,7 +41,7 @@ public class Quaternion_Test {
 						  b.m30, b.m31, b.m32, b.m33};
 		
 		for(int i = 0; i < 16; i++) {
-			if (floatEquals(aArray[i], bArray[i]) == false)
+			if (floatEqualsUlp(aArray[i], bArray[i]) == false)
 				return false;
 		}
 		
@@ -50,17 +52,6 @@ public class Quaternion_Test {
 	@Test
 	public void test_creationWithFloats() {
 		q = new Quaternion(1f, 2f, 3f, 4f);
-		
-		assertEquals(1f, q.x, EPSILON);
-		assertEquals(2f, q.y, EPSILON);
-		assertEquals(3f, q.z, EPSILON);
-		assertEquals(4f, q.w, EPSILON);
-	}
-	
-	//--------------------------------------------------------------------------
-	@Test
-	public void test_creationWithVector4f() {
-		q = new Quaternion(new Vector4f(1f, 2f, 3f, 4f));
 		
 		assertEquals(1f, q.x, EPSILON);
 		assertEquals(2f, q.y, EPSILON);
@@ -405,15 +396,15 @@ public class Quaternion_Test {
 	//--------------------------------------------------------------------------
 	@Test
 	public void test_inverse() {
-		q = new Quaternion(3f, 2f, 1f, 0f);
+		q = new Quaternion(3f, 2f, 1f, 1f);
 		
 		q.inverse();
 		
-		Quaternion expected = new Quaternion(3f, 2f, 1f, 0f);
-		float r = -1f / expected.normSquared();
-		expected.x *= r;
-		expected.y *= r;
-		expected.z *= r;
+		Quaternion expected = new Quaternion(3f, 2f, 1f, 1f);
+		float r = 1f / expected.normSquared();
+		expected.x *= -1f * r;
+		expected.y *= -1f * r;
+		expected.z *= -1f * r;
 		expected.w *= r;
 		
 		assertTrue(expected.equals(q));
@@ -423,12 +414,12 @@ public class Quaternion_Test {
 	//--------------------------------------------------------------------------
 	@Test
 	public void test_inverse2() {
-		q1 = new Quaternion(-3f, 2f, -1f, 0f);
+		q1 = new Quaternion(-3f, 2f, -1f, -1f);
 		q2 = new Quaternion();
 		
 		Quaternion.inverse(q1, q2);
 		
-		Quaternion expected = new Quaternion(-3f, 2f, -1f, 0f);
+		Quaternion expected = new Quaternion(-3f, 2f, -1f, -1f);
 		float r = 1f / expected.normSquared();
 		expected.x *= -1 * r;
 		expected.y *= -1 * r;
@@ -453,6 +444,37 @@ public class Quaternion_Test {
 		expected.y *= -1 * r;
 		expected.z *= -1 * r;
 		expected.w *= r;
+		
+		assertTrue(expected.equals(q2));
+		assertTrue(q2.equals(expected));
+	}
+	
+	//--------------------------------------------------------------------------
+	@Test
+	public void test_inverse4() {
+		q1 = new Quaternion(0.5f, 0.5f, 0.5f, 0.5f);
+		
+		q2 = Quaternion.inverse(q1);
+		
+		Quaternion expected = new Quaternion(0.5f, 0.5f, 0.5f, 0.5f);
+		float r = 1f / expected.normSquared();
+		expected.x *= -1 * r;
+		expected.y *= -1 * r;
+		expected.z *= -1 * r;
+		expected.w *= r;
+		
+		assertTrue(expected.equals(q2));
+		assertTrue(q2.equals(expected));
+	}
+	
+	//--------------------------------------------------------------------------
+	@Test
+	public void test_inverse_zero_length() {
+		q1 = new Quaternion(0.0f, 0.0f, 0.0f, 0.0f);
+		
+		q2 = Quaternion.inverse(q1);
+		
+		Quaternion expected = new Quaternion(0.0f, 0.0f, 0.0f, 0.0f);
 		
 		assertTrue(expected.equals(q2));
 		assertTrue(q2.equals(expected));
@@ -531,4 +553,259 @@ public class Quaternion_Test {
 		assertTrue(matrix4fEquals(expected, r));
 	}
 	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector CCW about z-basis vector.
+	 */
+	@Test
+	public void test_rotate_Xaxis_CCW_about_Zaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 1f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 0f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 1f, 0f, 0f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector (with w-component) CCW about z-basis vector.
+	 */
+	@Test
+	public void test_rotate_Xaxis_CCW_about_Zaxis_2() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 1f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 1f, 0f, 1f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector CW about z-basis vector.
+	 */
+	@Test
+	public void test_rotate_Xaxis_CW_about_Zaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 1f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, -1f, 0f, 1f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector CW about z-basis vector (non-unit length).
+	 */
+	@Test
+	public void test_rotate4_nonUnitLength() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 5f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, -1f, 0f, 1f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector CCW about y-basis vector.
+	 */
+	@Test
+	public void test_rotate_Xaxis_CCW_about_Yaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 1f, 0f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 0f, -1f, 1f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate x-basis vector CW about y-basis vector.
+	 */
+	@Test
+	public void test_rotate_Xaxis_CW_about_Yaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 1f, 0f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 0f, 1f, 1f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Attempt to rotate x-basis vector CW about itself, resulting in no change.
+	 */
+	@Test
+	public void test_rotate_Xasis_CW_about_itself() {
+		q1 = new Quaternion(new Vector3f(1f, 0f, 0f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(1f, 0f, 0f, 1f);
+		Quaternion expected = new Quaternion(q2);
+		
+		q1.rotate(q2);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate y-basis vector CCW about x-basis vector.
+	 */
+	@Test
+	public void test_rotate_Yaxis_CCW_about_Xaxis() {
+		q1 = new Quaternion(new Vector3f(1f, 0f, 0f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 1f, 0f, 2f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 0f, 1f, 2f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate y-basis vector CW about x-basis vector.
+	 */
+	@Test
+	public void test_rotate_Yaxis_CW_about_Xaxis() {
+		q1 = new Quaternion(new Vector3f(1f, 0f, 0f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 1f, 0f, 2f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 0f, -1f, 2f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate y-basis vector CCW about z-basis vector.
+	 */
+	@Test
+	public void test_rotate_Yaxis_CCW_about_Zaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 1f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 1f, 0f, 2f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(-1f, 0f, 0f, 2f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate y-basis vector CW about z-basis vector.
+	 */
+	@Test
+	public void test_rotate_Yaxis_CW_about_Zaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 0f, 1f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 1f, 0f, 2f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(1f, 0f, 0f, 2f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+    /*
+     * Attempt to rotate quaternion CCW zero degrees about the zero-vector,
+     * resulting in no change.
+     */
+	@Test
+	public void test_rotate_zero_quaternion() {
+		q1 = new Quaternion(0f, 0f, 0f, 0f);
+		q2 = new Quaternion(1f, 2f, 3f, 4f);
+		Quaternion expected = new Quaternion(q2);
+		
+		// Rotation of zero degrees.
+		q1.rotate(q2);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate z-basis vector CCW about x-basis vector.
+	 */
+	@Test
+	public void test_rotate_Zaxis_CCW_about_Xaxis() {
+		q1 = new Quaternion(new Vector3f(1f, 0f, 0f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 0f, 1f, 0f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, -1f, 0f, 0f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate z-basis vector CW about x-basis vector.
+	 */
+	@Test
+	public void test_rotate_Zaxis_CW_about_Xaxis() {
+		q1 = new Quaternion(new Vector3f(1f, 0f, 0f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 0f, 1f, 0f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(0f, 1f, 0f, 0f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate z-basis vector CCW about y-basis vector.
+	 */
+	@Test
+	public void test_rotate_Zaxis_CCW_about_Yaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 1f, 0f), (float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 0f, 1f, 0f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(1f, 0f, 0f, 0f);
+		
+		assertTrue(expected.equals(q2));
+	}
+	
+	//--------------------------------------------------------------------------
+	/*
+	 * Rotate z-basis vector CW about y-basis vector.
+	 */
+	@Test
+	public void test_rotate_Zaxis_CW_about_Yaxis() {
+		q1 = new Quaternion(new Vector3f(0f, 1f, 0f), -1f*(float)(0.5f * Math.PI));
+		q2 = new Quaternion(0f, 0f, 1f, 0f);
+		
+		q1.rotate(q2);
+		
+		Quaternion expected = new Quaternion(-1f, 0f, 0f, 0f);
+		
+		assertTrue(expected.equals(q2));
+	}
 }

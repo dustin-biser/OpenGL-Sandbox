@@ -17,9 +17,9 @@ import static org.lwjgl.opengl.GL32.*;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
-import utilities.GLUtils;
-import utilities.LwjglWindow;
-import utilities.ShaderUtils;
+import util.GLUtils;
+import util.LwjglWindow;
+import util.ShaderUtils;
 
 public class PerspectiveBox_WithMovableCamera extends LwjglWindow {
 	

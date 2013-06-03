@@ -16,8 +16,8 @@ import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
 
 
-import utilities.GLUtils;
-import utilities.ShaderUtils;
+import util.GLUtils;
+import util.ShaderUtils;
 
 
 public class SingleTriangleDemo {
