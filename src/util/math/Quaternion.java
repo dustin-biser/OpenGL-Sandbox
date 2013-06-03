@@ -4,7 +4,6 @@ import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 
-
 import static util.RuntimeDefines.DEBUG_MODE;
 import static util.math.MathUtils.*;
 
@@ -16,13 +15,19 @@ import static util.math.MathUtils.*;
  * 
  */
 public class Quaternion {
-	// Imaginary parts.
+	// Imaginary components.
 	public float x = 0f;
 	public float y = 0f;
 	public float z = 0f;
 	
-	// Real part.
+	// Real component.
 	public float w = 0f;
+	
+	private Matrix4f rotationMatrix = null;
+	private boolean rotationMatrixNeedsUpdate = true;
+	
+	// Temporary vector to aid in rotation calculations.
+	private static final Vector4f vRotTemp = new Vector4f();
 	
 	//--------------------------------------------------------------------------
 	/**
@@ -333,7 +338,7 @@ public class Quaternion {
 	
 	//--------------------------------------------------------------------------
     /**
-     * Compute the inverse of <code>src</code> are store the result in
+     * Compute the inverse of <code>src</code> and store the result in
      * <code>dest</code>.
      * 
      * @param src
@@ -387,50 +392,68 @@ public class Quaternion {
 	}
 	
 	// --------------------------------------------------------------------------
-	/**
-	 * Rotates Quaternion <code>q</code> using this Quaternion. Let this
-	 * Quaternion be p, then q is rotated using the following formula:
-	 * 
-	 * <pre>
-	 * q = p * q * inverse(p)
-	 * </pre>
-	 * 
-	 * where * denotes Quaternion multiplication.
-	 * 
-	 * @param q - the Quaternion to be rotated.
-	 */
+    /**
+     * Rotates <code>Quaternion q</code> using this <code>Quaternion</code>. Let
+     * this <code>Quaternion</code> be p. The rotation of q to q' is equivalent
+     * to: <br>
+     * 
+     * <pre>
+     * q' = p*q*p^(-1)
+     * </pre>
+     * 
+     * <br>
+     * where * denotes <code>Quaternion</code> multiplication.
+     * 
+     * @param q - the Quaternion to be rotated.
+     */
 	public void rotate(Quaternion q) {
-		// Skip rotation by zero length Quaternion.
-		if (this.normSquared() < MathUtils.EPSILON) {
-			return;
-		}
-			
-		Quaternion p = mult(mult(this, q), inverse((this)));
-		Quaternion.copy(p, q);
+		vRotTemp.x = q.x;
+		vRotTemp.y = q.y;
+		vRotTemp.z = q.z;
+		vRotTemp.w = q.w;
+		
+		this.rotate(vRotTemp);
+		
+		q.x = vRotTemp.x;
+		q.y = vRotTemp.y;
+		q.z = vRotTemp.z;
+		q.w = vRotTemp.w;
 	}
 	
 	//--------------------------------------------------------------------------
 	/**
 	 * Rotates the {@link Vector3f} <code>vec</code> using this
-	 * {@link Quaternion}. Let this Quaternion be p, then vec is rotated as
-	 * though it were the Quaternion (x,y,z,w) == (vec.x, vec.y, vec.z, 1).
-	 * Rotation is applied using the following formula:
+	 * {@link Quaternion}.
 	 * 
-	 * <pre>
-	 * vec = p * vec * inverse(p)
-	 * </pre>
-	 * 
-	 * where * denotes Quaternion multiplication.
-	 * 
-	 * @param vec - the Quaternion to be rotated.
+	 * @param vec - the <code>Vector3f</code> to be rotated.
 	 */
 	public void rotate(Vector3f vec) {
-		Quaternion q = new Quaternion(vec.x, vec.y, vec.z, 1);
-		this.rotate(q);
+		vRotTemp.x = vec.x;
+		vRotTemp.y = vec.y;
+		vRotTemp.z = vec.z;
 		
-		vec.x = q.x;
-		vec.y = q.y;
-		vec.z = q.z;
+		this.rotate(vRotTemp);
+		
+		vec.x = vRotTemp.x;
+		vec.y = vRotTemp.y;
+		vec.z = vRotTemp.z;
+	}
+	
+	//--------------------------------------------------------------------------
+	/**
+	 * Rotates the {@link Vector4f} <code>vec</code> using this
+	 * {@link Quaternion}.
+	 * 
+	 * @param vec - the <code>Vector4f</code> to be rotated.
+	 */
+	public void rotate(Vector4f vec) {
+		// Skip rotation by zero length Quaternion.
+		if (this.normSquared() < MathUtils.EPSILON) {
+			return;
+		}
+		
+		Matrix4f rotMat = this.toRotationMatrix();
+		Matrix4f.transform(rotMat, vec, vec);
 	}
 	
 	//--------------------------------------------------------------------------
