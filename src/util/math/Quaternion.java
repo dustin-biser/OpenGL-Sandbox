@@ -23,7 +23,7 @@ public class Quaternion {
 	// Real component.
 	public float w = 0f;
 	
-	private Matrix4f rotationMatrix = null;
+	private Matrix4f rotationMatrix = new Matrix4f();;
 	private boolean rotationMatrixNeedsUpdate = true;
 	
 	// Temporary vector to aid in rotation calculations.
@@ -100,6 +100,8 @@ public class Quaternion {
 		z *= w;
 		
 		w = (float) Math.cos(0.5f * angle);
+		
+		invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -146,6 +148,8 @@ public class Quaternion {
 		dest.y = lhs.y + rhs.y;
 		dest.z = lhs.z + rhs.z;
 		dest.w = lhs.w + rhs.w;
+		
+		dest.invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -169,6 +173,8 @@ public class Quaternion {
 		dest.y = lhs.y - rhs.y;
 		dest.z = lhs.z - rhs.z;
 		dest.w = lhs.w - rhs.w;
+		
+		dest.invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -199,6 +205,8 @@ public class Quaternion {
 		dest.y = (lhs.z * rhs.x) - (lhs.x * rhs.z) + (rhs.w * lhs.y) + (lhs.w * rhs.y);
 		dest.z = (lhs.x * rhs.y) - (lhs.y * rhs.x) + (rhs.w * lhs.z) + (lhs.w * rhs.z);
 		dest.w = (lhs.w * rhs.w) - (lhs.x * rhs.x) - (lhs.y * rhs.y) - (lhs.z * rhs.z);
+		
+		dest.invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -229,6 +237,8 @@ public class Quaternion {
 		dest.y = src.y;
 		dest.z = src.z;
 		dest.w = src.w;
+		
+		dest.invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -242,6 +252,8 @@ public class Quaternion {
 		x *= -1;
 		y *= -1;
 		z *= -1;
+		
+		invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -298,6 +310,8 @@ public class Quaternion {
 		y *= s;
 		z *= s;
 		w *= s;
+		
+		invalidateRotationMatrix();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -333,6 +347,8 @@ public class Quaternion {
 	    }
 		conjugate();
 		scale(1f / normSquared());
+		
+		invalidateRotationMatrix();
 	}
 	
 	
@@ -366,29 +382,52 @@ public class Quaternion {
 	
 	//--------------------------------------------------------------------------
 	/**
-	 * Creates a new {@link Matrix4f} object and sets its elements to represent
-	 * a rotation matrix for this {@link Quaternion}.
+	 * Creates a new {@link Matrix4f} and sets its elements to represent
+	 * the rotation matrix for this {@link Quaternion}.
 	 * 
 	 * @return a rotation matrix representation of this <code>Quaternion</code>.
 	 */
 	public Matrix4f toRotationMatrix() {
-		float s = 2f / norm();
-		
 		Matrix4f result = new Matrix4f();
-	
-		result.m00 = 1 - s*(y*y + z*z);
-		result.m01 = s*(x*y + w*z);
-		result.m02 = s*(x*z - w*y);
-		
-		result.m10 = s*(x*y - w*z);
-		result.m11 = 1 - s*(x*x + z*z);
-		result.m12 = s*(y*z + w*x);
-		
-		result.m20 = s*(x*z + w*y);
-		result.m21 = s*(y*z - w*x);
-		result.m22 = 1 - s*(x*x + y*y);
+		toRotationMatrix(result);
 		
 		return result;
+	}
+	
+	//--------------------------------------------------------------------------
+	/**
+	 * Stores the rotation matrix representation of this {@link Quaternion}
+	 * in the {@link Matrix4f} dest.
+	 * 
+	 * @param dest - destination for storing the rotation matrix.
+	 */
+	public void toRotationMatrix(Matrix4f dest) {
+		if (rotationMatrixNeedsUpdate) {
+            float s = 2f / norm();
+
+            dest.m00 = 1 - s * (y * y + z * z);
+            dest.m01 = s * (x * y + w * z);
+            dest.m02 = s * (x * z - w * y);
+
+            dest.m10 = s * (x * y - w * z);
+            dest.m11 = 1 - s * (x * x + z * z);
+            dest.m12 = s * (y * z + w * x);
+
+            dest.m20 = s * (x * z + w * y);
+            dest.m21 = s * (y * z - w * x);
+            dest.m22 = 1 - s * (x * x + y * y);
+            
+    		Matrix4f.load(dest, rotationMatrix);
+    		rotationMatrixNeedsUpdate = false;
+		}
+		else {
+		    Matrix4f.load(rotationMatrix, dest);
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	private void invalidateRotationMatrix() {
+	    rotationMatrixNeedsUpdate = true;
 	}
 	
 	// --------------------------------------------------------------------------
@@ -407,6 +446,8 @@ public class Quaternion {
      * @param q - the Quaternion to be rotated.
      */
 	public void rotate(Quaternion q) {
+	    if (this == q) return;  // Rotating itself has no effect.
+	    
 		vRotTemp.x = q.x;
 		vRotTemp.y = q.y;
 		vRotTemp.z = q.z;
@@ -422,7 +463,7 @@ public class Quaternion {
 	
 	//--------------------------------------------------------------------------
 	/**
-	 * Rotates the {@link Vector3f} <code>vec</code> using this
+	 * Rotates <code>vec</code> using this
 	 * {@link Quaternion}.
 	 * 
 	 * @param vec - the <code>Vector3f</code> to be rotated.
@@ -431,6 +472,7 @@ public class Quaternion {
 		vRotTemp.x = vec.x;
 		vRotTemp.y = vec.y;
 		vRotTemp.z = vec.z;
+		vRotTemp.w = 0f;
 		
 		this.rotate(vRotTemp);
 		
@@ -441,7 +483,7 @@ public class Quaternion {
 	
 	//--------------------------------------------------------------------------
 	/**
-	 * Rotates the {@link Vector4f} <code>vec</code> using this
+	 * Rotates <code>vec</code> using this
 	 * {@link Quaternion}.
 	 * 
 	 * @param vec - the <code>Vector4f</code> to be rotated.
@@ -452,8 +494,11 @@ public class Quaternion {
 			return;
 		}
 		
-		Matrix4f rotMat = this.toRotationMatrix();
-		Matrix4f.transform(rotMat, vec, vec);
+		if(rotationMatrixNeedsUpdate) {
+		    rotationMatrix = this.toRotationMatrix();
+		}
+		
+		Matrix4f.transform(rotationMatrix, vec, vec);
 	}
 	
 	//--------------------------------------------------------------------------
@@ -551,6 +596,8 @@ public class Quaternion {
            s = (float)(1f / Math.sqrt(mat.m33));
            this.scale(s);
         }
+        
+        invalidateRotationMatrix();
 	}
 
 	//--------------------------------------------------------------------------

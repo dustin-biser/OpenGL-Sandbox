@@ -173,10 +173,10 @@ public class QuaternionCamera {
 	 * @param centerPos - world space target the Camera is pointed at.
 	 * @param upDir - world space up direction for Camera.
 	 */
-//	public void lookAt(Vector3f eyePos, Vector3f centerPos, Vector3f upDir) {
-//		lookAt(eyePos.x, eyePos.y, eyePos.z, centerPos.x, centerPos.y,
-//				centerPos.z, upDir.x, upDir.y, upDir.z);
-//	}
+	public void lookAt(Vector3f eyePos, Vector3f centerPos, Vector3f upDir) {
+		lookAt(eyePos.x, eyePos.y, eyePos.z, centerPos.x, centerPos.y,
+				centerPos.z, upDir.x, upDir.y, upDir.z);
+	}
 
 
 	// --------------------------------------------------------------------------
@@ -239,9 +239,9 @@ public class QuaternionCamera {
 	}
 
 	// --------------------------------------------------------------------------
-//	public void lookAt(Vector3f centerPos) {
-//		lookAt(centerPos.x, centerPos.y, centerPos.z);
-//	}
+	public void lookAt(Vector3f centerPos) {
+		lookAt(centerPos.x, centerPos.y, centerPos.z);
+	}
 
 	// --------------------------------------------------------------------------
 	public void rotate(Vector3f axis, float angle) {

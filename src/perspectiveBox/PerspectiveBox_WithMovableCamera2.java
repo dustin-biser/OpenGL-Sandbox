@@ -79,6 +79,8 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	protected void logicCycle(){
 		this.processUserInput();
 		this.updateMatrixUniforms();
+		
+		camera.lookAt(-7f, -9f, -45f);
 	}
 	
 	//--------------------------------------------------------------------------
@@ -483,9 +485,9 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	//--------------------------------------------------------------------------
 	private void processUserInput() {
 		// Translations
-		final float x_delta = 0.2f; 
-		final float y_delta = 0.2f; 
-		final float z_delta = 0.2f; 
+		final float x_delta = 0.8f; 
+		final float y_delta = 0.8f; 
+		final float z_delta = 0.8f; 
 		
 		// Rotations
 		final float roll_delta = (0.01f)*(float)Math.PI;
