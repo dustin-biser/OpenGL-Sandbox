@@ -23,7 +23,7 @@ public class Quaternion {
 	// Real component.
 	public float w = 0f;
 	
-	private Matrix4f rotationMatrix = new Matrix4f();;
+	private Matrix4f rotationMatrix = new Matrix4f();
 	private boolean rotationMatrixNeedsUpdate = true;
 	
 	// Temporary vector to aid in rotation calculations.
@@ -86,7 +86,7 @@ public class Quaternion {
 	public void fromAxisAngle(Vector3f axis, float angle) {
 		if (DEBUG_MODE) { validateVectorIsNonZero(axis); }
 		
-		// q = (sin(angle/2)u, cos(angle/2))  with u, a unit vector.
+		// Set this quaternion to (sin(angle/2)*u, cos(angle/2))  with u, a unit vector.
 		
 		w = (float) (1f / Math.sqrt((axis.x*axis.x + axis.y*axis.y + axis.z*axis.z)));
 		

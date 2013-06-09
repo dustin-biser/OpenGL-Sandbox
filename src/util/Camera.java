@@ -7,8 +7,8 @@ import util.math.MathUtils;
 import util.math.Quaternion;
 
 public class Camera {
-	private Vector3f centerPosition = new Vector3f(0f, 0f, -1f);
-	private Vector3f eyePosition = new Vector3f(0f, 0f, 0f);
+	private Vector3f centerPosition = new Vector3f(0f, 0f, -1f);  // world space coordinates.
+	private Vector3f eyePosition = new Vector3f(0f, 0f, 0f);      // world space coordinates.
 
 	// Orientation of camera axes.
 	private Quaternion orientation = new Quaternion(0f, 0f, 0f, 1f); // Identity.
@@ -18,9 +18,9 @@ public class Camera {
 	public static final Vector3f Y_AXIS = new Vector3f(0f, 1f, 0f);
 	public static final Vector3f Z_AXIS = new Vector3f(0f, 0f, 1f);
 	
-    private Vector3f s = new Vector3f(1f, 0f, 0f);  // side camera vector.
-    private Vector3f f = new Vector3f(0f, 0f, -1f); // forward camera vector.
-    private Vector3f u = new Vector3f(0f, 1f, 0f);  // up camera vector.
+    private Vector3f l = new Vector3f(-1f, 0f, 0f);  // left local camera vector.
+    private Vector3f f = new Vector3f(0f, 0f, -1f);  // forward local camera vector.
+    private Vector3f u = new Vector3f(0f, 1f, 0f);   // up local camera vector.
 
 	// --------------------------------------------------------------------------
 	public void setPosition(float x, float y, float z) {
@@ -63,27 +63,14 @@ public class Camera {
 	/**
 	 * Translates the camera relative to itself.
 	 * 
-	 * @param right - translation distance in the left-direction.
-	 * @param up - translation distance in the up-direction.
-	 * @param forward - translation distance in the forward-direction.
+	 * @param left - translation distance along camera's local left-direction.
+	 * @param up - translation distance along camera's local up-direction.
+	 * @param forward - translation distance along camera's local forward-direction.
 	 */
-	public void translateRelative(float right, float up, float forward) {
-		// Camera basis vectors given in world space coordinates.
-		Quaternion r = new Quaternion(1f, 0f, 0f, 0f);   // right 
-		Quaternion u = new Quaternion(0f, 1f, 0f, 0f);   // up
-		Quaternion f = new Quaternion(0f, 0f, -1f, 0f);  // forward
-		
-		// Orient the camera basis vectors using the camera orientation q.
-		orientation.rotate(r);
-		orientation.rotate(u);
-		orientation.rotate(f);
-		
-		// Decompose vectors l, u, f into its world space components x, y, z,
-		// and translate the camera right-units in the s direction, up-units in
-		// the u direction, and forward-units in the f direction.
-		eyePosition.x += (right * r.x) + (up * u.x) + (forward * f.x);
-		eyePosition.y += (right * r.y) + (up * u.y) + (forward * f.y);
-		eyePosition.z += (right * r.z) + (up * u.z) + (forward * f.z);
+	public void translateRelative(float left, float up, float forward) {
+		eyePosition.x += (left * l.x) + (up * u.x) + (forward * f.x);
+		eyePosition.y += (left * l.y) + (up * u.y) + (forward * f.y);
+		eyePosition.z += (left * l.z) + (up * u.z) + (forward * f.z);
 	}
 
 	// --------------------------------------------------------------------------
@@ -149,18 +136,25 @@ public class Camera {
 		u.y = upY;
 		u.z = upZ;
 
-		// s = f x u
-		Vector3f.cross(f, u, s);
-		s.normalise();
+		// l = u x f
+		Vector3f.cross(u, f, l);
+		l.normalise();
 	
-		// u = s x f
-		Vector3f.cross(s, f, u);
+		// u = f x l
+		Vector3f.cross(f, l, u);
 		
-		// Flip f, so camera points down local -z axis.
+		// Flip f so it points along camera's local z-axis.
 		f.scale(-1f);
 		
+		// Flip l so it points along camera's local x-axis.
+		l.scale(-1f);
+		
 		// Construct orientation from the basis vectors s, u, f.
-		orientation.fromAxes(s, u, f);
+		orientation.fromAxes(l, u, f);
+		
+		// Reset camera's f and l vectors.
+		f.scale(-1f);
+		l.scale(-1f);
 	}
 
 	// --------------------------------------------------------------------------
@@ -193,49 +187,57 @@ public class Camera {
 
 		f.normalise();
 
-		// The following projects u onto the plane defined by the point
-		// eyePosition, and the normal f. The goal is to rotate u so that it is
-		// orthogonal to f, while attempting to keep u's orientation fairly
-		// close to its previous state.
+		// The following projects u onto the plane defined by the point eyePosition,
+		// and the normal f. The goal is to rotate u so that it is orthogonal to f,
+		// while attempting to keep u's orientation close to its previous direction.
 		{
-			// Borrow s vector for calculation, so we don't have to allocate a
+			// Borrow l vector for calculation, so we don't have to allocate a
 			// new vector.
-			// s = eye + u
-			Vector3f.add(eyePosition, u, s);
+			// l = eye + u
+			Vector3f.add(eyePosition, u, l);
 
 			// t = f dot u
 			float t = Vector3f.dot(f, u);
 
-			// Move point s in the normal direction, f, by t units so that it is
+			// Move point l in the normal direction, f, by t units so that it is
 			// on the plane.
 			if (t < 0) {
 				t *= -1;
 			}
-			s.x += t * f.x;
-			s.y += t * f.y;
-			s.z += t * f.z;
+			l.x += t * f.x;
+			l.y += t * f.y;
+			l.z += t * f.z;
 
-			// u = s - eye.
-			Vector3f.sub(s, eyePosition, u);
+			// u = l - eye.
+			Vector3f.sub(l, eyePosition, u);
 			u.normalise();
 		}
 
-		// Update s vector given new f and u vectors.
-		// s = f x u
-		Vector3f.cross(f, u, s);
+		// Update l vector given new f and u vectors.
+		// l = u x f
+		Vector3f.cross(u, f, l);
 
 		// If f and u are no longer orthogonal, make them so.
 		if (Vector3f.dot(f, u) > MathUtils.EPSILON) {
-			// u = f x s
-			Vector3f.cross(s, f, u);
+			// u = f x l
+			Vector3f.cross(f, l, u);
 			u.normalise();
 		}
 		
-		// Flip f, so camera points down its local -z axis.
+        // Flip f so it points along camera's local z-axis.
 		f.scale(-1f);
 		
-		// Construct orientation from the basis vectors s, u, f.
-		orientation.fromAxes(s, u, f);
+		// Flip l so it points along camera's local x-axis.
+		l.scale(-1f);
+		
+		// Construct orientation from the basis vectors l, u, f, which make up the
+		// camera's local right handed coordinate system.
+		orientation.fromAxes(l, u, f);
+		
+		// Reset camera's f and l vectors, so f points forward, and l points to the
+		// left, as seen by the camera.
+		f.scale(-1f);
+		l.scale(-1f);
 	}
 
 	// --------------------------------------------------------------------------
@@ -246,7 +248,7 @@ public class Camera {
 	// --------------------------------------------------------------------------
 	public void rotate(Vector3f axis, float angle) {
 		Quaternion p = new Quaternion(axis, angle);
-		Quaternion.mult(orientation, p, orientation);
+		Quaternion.mult(p, orientation, orientation);
 		orientation.normalize();
 	}
 	
@@ -257,7 +259,11 @@ public class Camera {
 		
 		Quaternion q = new Quaternion(localZAxis, angle);
 		
-		// orientation = orientation * q.
+		// Update camera's local left and up vectors.
+		q.rotate(l);
+		q.rotate(u);
+		
+		// orientation = q * orientation.
 		Quaternion.mult(q, orientation, orientation);
 	}
 	
@@ -268,7 +274,11 @@ public class Camera {
 		
 		Quaternion q = new Quaternion(localXAxis, angle);
 		
-		// orientation = orientation * q.
+		// Update camera's local up and forward vectors.
+		q.rotate(u);
+		q.rotate(f);
+		
+		// orientation = q * orientation.
 		Quaternion.mult(q, orientation, orientation);
 	}
 	
@@ -279,7 +289,11 @@ public class Camera {
 		
 		Quaternion q = new Quaternion(localYAxis, angle);
 		
-		// orientation = orientation * q.
+		// Update camera's local left and forward vectors.
+		q.rotate(l);
+		q.rotate(f);
+		
+		// orientation = q * orientation.
 		Quaternion.mult(q, orientation, orientation);
 	}
 
