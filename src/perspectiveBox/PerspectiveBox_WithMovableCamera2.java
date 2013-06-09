@@ -73,14 +73,31 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		this.setupCamera();
 	}
 	
-	Vector3f cameraPos = new Vector3f();
+	private boolean lookAtBox = false;
+	
+    private void toogleLookAtBox() {
+        if (lookAtBox == false) {
+            this.lookAtBox = true;
+        } else {
+            lookAtBox = false;
+        }
+    }
+    
+    private void lookAtBoxIfToogled() {
+		if (lookAtBox) {
+            // Have camera look at box.
+            camera.lookAt(-7f, -9f, -45f);
+		}
+    }
+    
 	//--------------------------------------------------------------------------
 	@Override
 	protected void logicCycle(){
+	    this.lookAtBoxIfToogled();
 		this.processUserInput();
+	    this.lookAtBoxIfToogled();
+	    
 		this.updateMatrixUniforms();
-		
-		camera.lookAt(-7f, -9f, -45f);
 	}
 	
 	//--------------------------------------------------------------------------
@@ -526,10 +543,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		///////////////////////////////////////////////////////////
 		// Horizontal Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-			camera.translateRelative(-1 * x_delta, 0f, 0f);
+			camera.translateRelative(x_delta, 0f, 0f);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_D)){
-			camera.translateRelative(x_delta, 0f, 0f);
+			camera.translateRelative(-1 * x_delta, 0f, 0f);
 		}
 		
 		// Vertical Camera Movement.
@@ -542,10 +559,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		
 		// Near/Far Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-			camera.translateRelative(0f, 0f, -1 * z_delta);
+			camera.translateRelative(0f, 0f, z_delta);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-			camera.translateRelative(0f, 0f, z_delta);
+			camera.translateRelative(0f, 0f, -1*z_delta);
 		}
 		
 		// Roll
@@ -594,8 +611,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 					System.out.println("GL_CULL_FACE Disabled");
 				}
 				else if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
-					// Have camera look at box.
-					camera.lookAt(-7f, -9f, -45f);
+					toogleLookAtBox();
 				}
 			}
 		}
