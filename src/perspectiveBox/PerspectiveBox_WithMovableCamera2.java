@@ -19,7 +19,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import util.GLUtils;
 import util.LwjglWindow;
-import util.QuaternionCamera;
+import util.Camera;
 import util.ShaderUtils;
 
 public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
@@ -54,7 +54,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	
 	private byte[] indices;
 	
-	private QuaternionCamera camera;
+	private Camera camera;
 	
 	// Frustum dimensions
 	private float frustumFov = 30f;
@@ -223,7 +223,7 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 	
 	//--------------------------------------------------------------------------
 	private void setupCamera(){
-		camera = new QuaternionCamera();
+		camera = new Camera();
 		
 		// Position camera near Box, which is at (-7f, -9f, -45f);
 //		camera.setPosition(0f, -9f, -40f);
@@ -542,10 +542,10 @@ public class PerspectiveBox_WithMovableCamera2 extends LwjglWindow {
 		
 		// Near/Far Camera Movement.
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-			camera.translateRelative(0f, 0f, z_delta);
+			camera.translateRelative(0f, 0f, -1 * z_delta);
 		}
 		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-			camera.translateRelative(0f, 0f, -1 * z_delta);
+			camera.translateRelative(0f, 0f, z_delta);
 		}
 		
 		// Roll
