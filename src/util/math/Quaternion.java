@@ -201,10 +201,15 @@ public class Quaternion {
 	 * @param dest
 	 */
 	public static void mult(Quaternion lhs, Quaternion rhs, Quaternion dest) {
-		dest.x = (lhs.y * rhs.z) - (lhs.z * rhs.y) + (rhs.w * lhs.x) + (lhs.w * rhs.x);
-		dest.y = (lhs.z * rhs.x) - (lhs.x * rhs.z) + (rhs.w * lhs.y) + (lhs.w * rhs.y);
-		dest.z = (lhs.x * rhs.y) - (lhs.y * rhs.x) + (rhs.w * lhs.z) + (lhs.w * rhs.z);
-		dest.w = (lhs.w * rhs.w) - (lhs.x * rhs.x) - (lhs.y * rhs.y) - (lhs.z * rhs.z);
+        float x = (lhs.y * rhs.z) - (lhs.z * rhs.y) + (rhs.w * lhs.x) + (lhs.w * rhs.x);
+        float y = (lhs.z * rhs.x) - (lhs.x * rhs.z) + (rhs.w * lhs.y) + (lhs.w * rhs.y);
+        float z = (lhs.x * rhs.y) - (lhs.y * rhs.x) + (rhs.w * lhs.z) + (lhs.w * rhs.z);
+        float w = (lhs.w * rhs.w) - (lhs.x * rhs.x) - (lhs.y * rhs.y) - (lhs.z * rhs.z);
+        
+        dest.x = x;
+        dest.y = y;
+        dest.z = z;
+        dest.w = w;
 		
 		dest.invalidateRotationMatrix();
 	}
@@ -607,4 +612,7 @@ public class Quaternion {
 					"Vector3f parameter cannot have zero length.");
 		}
 	}
+	
+	
+	
 }
