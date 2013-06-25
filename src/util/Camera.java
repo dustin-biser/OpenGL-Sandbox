@@ -196,14 +196,11 @@ public class Camera {
 			// l = eye + u
 			Vector3f.add(eyePosition, u, l);
 
-			// t = f dot u
-			float t = Vector3f.dot(f, u);
+			// t = -1 * (f dot u)
+			float t = -1f * Vector3f.dot(f, u);
 
 			// Move point l in the normal direction, f, by t units so that it is
 			// on the plane.
-			if (t < 0) {
-				t *= -1;
-			}
 			l.x += t * f.x;
 			l.y += t * f.y;
 			l.z += t * f.z;
