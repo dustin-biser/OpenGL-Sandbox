@@ -242,9 +242,6 @@ public class PerspectiveBox extends LwjglWindow {
 	private void setupCamera(){
 		camera = new Camera();
 		
-		// Position camera near Box, which is at (-7f, -9f, -45f);
-//		camera.setPosition(0f, -9f, -40f);
-		
 		worldToCameraMatrix = camera.getViewMatrix();
 	}
 	
