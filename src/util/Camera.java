@@ -18,9 +18,9 @@ public class Camera {
 	public static final Vector3f Y_AXIS = new Vector3f(0f, 1f, 0f);
 	public static final Vector3f Z_AXIS = new Vector3f(0f, 0f, 1f);
 	
-    private Vector3f l = new Vector3f(-1f, 0f, 0f);  // left local camera vector.
-    private Vector3f f = new Vector3f(0f, 0f, -1f);  // forward local camera vector.
-    private Vector3f u = new Vector3f(0f, 1f, 0f);   // up local camera vector.
+	private Vector3f l = new Vector3f(-1f, 0f, 0f);  // left local camera vector.
+	private Vector3f f = new Vector3f(0f, 0f, -1f);  // forward local camera vector.
+	private Vector3f u = new Vector3f(0f, 1f, 0f);   // up local camera vector.
 
 	// --------------------------------------------------------------------------
 	public void setPosition(float x, float y, float z) {
@@ -221,7 +221,7 @@ public class Camera {
 			u.normalise();
 		}
 		
-        // Flip f so it points along camera's local z-axis.
+		// Flip f so it points along camera's local z-axis.
 		f.scale(-1f);
 		
 		// Flip l so it points along camera's local x-axis.

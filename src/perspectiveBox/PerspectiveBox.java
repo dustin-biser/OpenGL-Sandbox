@@ -26,7 +26,7 @@ public class PerspectiveBox extends LwjglWindow {
 	
 	public static void main(String[] args) {
 		PerspectiveBox p = new PerspectiveBox();
-		p.setWindowTitle("Perspective Box with Movable Camera");
+		p.setWindowTitle("Quaternion Camera Demo");
 		p.start();
 	}
 	
