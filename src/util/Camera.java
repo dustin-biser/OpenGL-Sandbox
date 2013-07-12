@@ -98,21 +98,21 @@ public class Camera {
 	}
 
 	// --------------------------------------------------------------------------
-    /**
-     * Position the camera at (eyeX, eyeY, eyeZ) in world space, so that it is
-     * facing the point (centerX, centerY, centerZ) in the center of its view,
-     * and with up vector given by (upX, upY, upZ).
-     * 
-     * @param eyeX
-     * @param eyeY
-     * @param eyeZ
-     * @param centerX
-     * @param centerY
-     * @param centerZ
-     * @param upX
-     * @param upY
-     * @param upZ
-     */
+	/**
+	 * Position the camera at (eyeX, eyeY, eyeZ) in world space, so that it is
+	 * facing the point (centerX, centerY, centerZ) in the center of its view,
+	 * and with up vector given by (upX, upY, upZ).
+	 * 
+	 * @param eyeX
+	 * @param eyeY
+	 * @param eyeZ
+	 * @param centerX
+	 * @param centerY
+	 * @param centerZ
+	 * @param upX
+	 * @param upY
+	 * @param upZ
+	 */
 	public void lookAt(float eyeX, float eyeY, float eyeZ, float centerX,
 			float centerY, float centerZ, float upX, float upY, float upZ) {
 
