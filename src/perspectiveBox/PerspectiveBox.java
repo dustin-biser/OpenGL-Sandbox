@@ -16,11 +16,13 @@ import static org.lwjgl.opengl.GL32.*;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
 
 import util.GLUtils;
 import util.LwjglWindow;
 import util.Camera;
 import util.ShaderUtils;
+import util.math.Quaternion;
 
 public class PerspectiveBox extends LwjglWindow {
 	
@@ -51,6 +53,15 @@ public class PerspectiveBox extends LwjglWindow {
 	private Matrix4f cameraToClipMatrix;
 	private Matrix4f ground_modelToWorldMatrix;
 	private FloatBuffer matrix4fBuffer;
+	
+	// TODO: box related data
+	private Quaternion box_orientation = new Quaternion(0f, 0f, 0f, 1f); // Identity.
+	public static final Vector3f BOX_X_AXIS = new Vector3f(1f, 0f, 0f);
+	public static final Vector3f BOX_Y_AXIS = new Vector3f(0f, 1f, 0f);
+	public static final Vector3f BOX_Z_AXIS = new Vector3f(0f, 0f, 1f);
+	private Vector3f box_l = new Vector3f(1f, 0f, 0f);  // left local camera vector.
+	private Vector3f box_f = new Vector3f(0f, 0f, 1f);  // forward local camera vector.
+	private Vector3f box_u = new Vector3f(0f, 1f, 0f);  // up local camera vector.
 	
 	private byte[] indices;
 	
@@ -86,7 +97,14 @@ public class PerspectiveBox extends LwjglWindow {
     private void lookAtBoxIfToogled() {
 		if (lookAtBox) {
             // Have camera look at box.
-            camera.lookAt(-7f, -9f, -45f);
+//            camera.lookAt(-7f, -9f, -45f);
+
+			
+			// TODO : changed here
+//			camera.lookAt(box_modelToWorldMatrix.m30, box_modelToWorldMatrix.m31, box_modelToWorldMatrix.m32);
+
+			
+			camera.trail(box_modelToWorldMatrix.m30, box_modelToWorldMatrix.m31, box_modelToWorldMatrix.m32, box_orientation, 20, 0, 0);
 		}
     }
     
@@ -476,6 +494,13 @@ public class PerspectiveBox extends LwjglWindow {
 		glUseProgram(programId);
 		
 		// Upload modelToWorldMatrix uniform.
+		//+++++++++++++++++++++++++++++++++++++++++++++++
+		// TODO: changetd here
+		Matrix4f rm = box_orientation.toRotationMatrix();
+		Matrix4f.mul(box_modelToWorldMatrix, rm, box_modelToWorldMatrix);
+		box_orientation = new Quaternion(0f, 0f, 0f, 1f); // Identity.
+		//+++++++++++++++++++++++++++++++++++++++++++++++
+		
 		box_modelToWorldMatrix.store(matrix4fBuffer);
 		matrix4fBuffer.flip();
 		glUniformMatrix4(modelToWorldMatrix_Location, false, matrix4fBuffer);
@@ -512,28 +537,61 @@ public class PerspectiveBox extends LwjglWindow {
 		// Box Movement Keys
 		///////////////////////////////////////////////////////////
 		// Horizontal Box Movement.
-//		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
-//		}
-//		else if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
-//		}
-//		
-//		// Vertical Box Movement.
-//		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
-//		}
-//		else if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
-//		}
-//		
-//		// Near/Far Box Movement.
-//		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
-//		}
-//		else if (Keyboard.isKeyDown(Keyboard.KEY_M)) {
-//			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
-//		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_J)) {
+			box_modelToWorldMatrix.translate(new Vector3f(x_delta, 0, 0));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_L)) {
+			box_modelToWorldMatrix.translate(new Vector3f(-1*x_delta, 0, 0));
+		}
+		
+		// Vertical Box Movement.
+		if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+			box_modelToWorldMatrix.translate(new Vector3f(0, y_delta, 0));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_SEMICOLON)) {
+			box_modelToWorldMatrix.translate(new Vector3f(0, -1*y_delta, 0));
+		}
+		
+		// Near/Far Box Movement.
+		if (Keyboard.isKeyDown(Keyboard.KEY_I)) {
+			box_modelToWorldMatrix.translate(new Vector3f(0, 0, z_delta));
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_K)) {
+			box_modelToWorldMatrix.translate(new Vector3f(0, 0, -1*z_delta));
+		}
+		
+		// TODO: Add box rotations
+		//pitch
+		if (Keyboard.isKeyDown(Keyboard.KEY_NUMPAD5)) {
+//			System.out.println("KEY_NUMPAD5");
+			pitch(-1f*pitch_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_NUMPAD8)) {
+//			System.out.println("KEY_NUMPAD8");
+			pitch(pitch_delta);
+		}
+		
+		// Yaw
+		if (Keyboard.isKeyDown(Keyboard.KEY_O)) {
+//			System.out.println("KEY_O");
+			yaw(-1f*yaw_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_U)) {
+//			System.out.println("KEY_U");
+			yaw(yaw_delta);
+		}
+		
+		// Roll
+		if (Keyboard.isKeyDown(Keyboard.KEY_NUMPAD4)) {
+//			System.out.println("KEY_NUMPAD4");
+			roll(-1f*roll_delta);
+		}
+		else if (Keyboard.isKeyDown(Keyboard.KEY_NUMPAD6)) {
+//			System.out.println("KEY_NUMPAD6");
+			roll(roll_delta);
+		}
+		
+		
 		
 		///////////////////////////////////////////////////////////
 		// Camera Movement Keys
@@ -619,6 +677,54 @@ public class PerspectiveBox extends LwjglWindow {
 		glUseProgram(0);
 		
 		GLUtils.exitOnGLError("processUserInput");
+	}
+	
+	// --------------------------------------------------------------------------
+	// Box rotations
+	
+	// Box pitch
+	public void pitch(float angle) {
+		Vector3f localXAxis = new Vector3f(BOX_X_AXIS);
+		box_orientation.rotate(localXAxis);
+		
+		Quaternion q = new Quaternion(localXAxis, angle);
+		
+		// Update camera's local up and forward vectors.
+		q.rotate(box_u);
+		q.rotate(box_f);
+		
+		// orientation = q * orientation.
+		Quaternion.mult(q, box_orientation, box_orientation);
+	}
+	
+	// Box yaw
+	public void yaw(float angle) {
+		Vector3f localYAxis = new Vector3f(BOX_Y_AXIS);
+		box_orientation.rotate(localYAxis);
+		
+		Quaternion q = new Quaternion(localYAxis, angle);
+		
+		// Update camera's local left and forward vectors.
+		q.rotate(box_l);
+		q.rotate(box_f);
+		
+		// orientation = q * orientation.
+		Quaternion.mult(q, box_orientation, box_orientation);
+	}
+	
+	// Box roll
+	public void roll(float angle) {
+		Vector3f localZAxis = new Vector3f(BOX_Z_AXIS);
+		box_orientation.rotate(localZAxis);
+		
+		Quaternion q = new Quaternion(localZAxis, angle);
+		
+		// Update camera's local left and up vectors.
+		q.rotate(box_l);
+		q.rotate(box_u);
+		
+		// orientation = q * orientation.
+		Quaternion.mult(q, box_orientation, box_orientation);
 	}
 	
 }

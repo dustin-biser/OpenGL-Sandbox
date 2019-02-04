@@ -241,6 +241,50 @@ public class Camera {
 	public void lookAt(Vector3f centerPos) {
 		lookAt(centerPos.x, centerPos.y, centerPos.z);
 	}
+	
+	// --------------------------------------------------------------------------
+	/**
+	 * Trail an object at position (centerX, centerY, centerZ), with distance
+	 * 'distance' from the position, and with rotations around and above
+	 * the position
+	 * 
+	 * @param centerX
+	 * @param centerY
+	 * @param centerZ
+	 * @param distance
+	 * @param angleAbove
+	 * @param angleAround
+	 */
+	public void trail(float centerX, float centerY, float centerZ,
+			Quaternion ori,
+			float distance,	float angleAbove, float angleAround) {
+		// TODO: implement
+		
+		eyePosition.x = centerX;
+		eyePosition.y = centerY;
+		eyePosition.z = centerZ - distance;
+		
+		Vector3f localXAxis = new Vector3f(X_AXIS);
+		ori.rotate(localXAxis);
+		Vector3f localYAxis = new Vector3f(Y_AXIS);
+		ori.rotate(localYAxis);
+		Vector3f localZAxis = new Vector3f(Z_AXIS);
+		ori.rotate(localZAxis);
+		
+		Quaternion qx = new Quaternion(localXAxis, (float) Math.toRadians(0));
+		Quaternion qy = new Quaternion(localYAxis, (float) Math.toRadians(180));
+		Quaternion qz = new Quaternion(localZAxis, (float) Math.toRadians(0));
+		
+		// Update camera's local up and forward vectors.
+//		q.rotate(l); // left local camera vector. 		(-1f, 0f, 0f)
+//		q.rotate(f); // forward local camera vector. 	(0f, 0f, -1f)
+//		q.rotate(u); // up local camera vector.			(0f, 1f, 0f)
+		
+		// orientation = q * orientation.
+		Quaternion.mult(qx, orientation, orientation);
+		Quaternion.mult(qy, orientation, orientation);
+		Quaternion.mult(qz, orientation, orientation);
+	}
 
 	// --------------------------------------------------------------------------
 	public void rotate(Vector3f axis, float angle) {
